@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <style>
+            #map {
+                width: 1074px;
+                height: 625px;
+                margin: 20px auto;
+            }
+            #controls {
+                display: flex;
+                flex-wrap: wrap;
+                margin-bottom: 10px;
+                justify-content: center;
+            }
+            .sao-button {
+                margin: 5px;
+                padding: 8px 12px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .sao-button:hover {
+                background-color: #45a049;
+            }
+        </style>
+        <title>Carte Interactive</title>
+    </head>
+    <body>
+        <div id="controls"></div>
+        <div id="map"></div>
+        <script src="js/leaflet.js"></script>
+        <script src="data/convnonexploitjoint_1.js"></script>
+        <script>
+            var map = L.map('map', {
+                zoomControl: false,
+                maxZoom: 28,
+                minZoom: 1
+            }).fitBounds([[27.956151420272477, -16.97128148695726], [38.29512954616265, 4.458593464408845]]);
+
+            var layer_imagesatellite_0 = L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
+                opacity: 1.0,
+                minZoom: 1,
+                maxZoom: 28,
+                minNativeZoom: 0,
+                maxNativeZoom: 18
+            });
+            map.addLayer(layer_imagesatellite_0);
+
+            var bounds_group = new L.featureGroup([]);
+            var layer_convnonexploitjoint_1 = new L.geoJson(json_convnonexploitjoint_1, {
+                style: {
+                    color: 'rgba(35,35,35,1.0)',
+                    weight: 1,
+                    fillColor: 'rgba(190,207,80,1.0)',
+                    fillOpacity: 1,
+                },
+                onEachFeature: function(feature, layer) {
+                    var popupContent = '<table>';
+                    for (var key in feature.properties) {
+                        if (feature.properties.hasOwnProperty(key)) {
+                            popupContent += `<tr><th>${key}</th><td>${feature.properties[key] || 'N/A'}</td></tr>`;
+                        }
+                    }
+                    popupContent += '</table>';
+                    layer.bindPopup(popupContent);
+                }
+            });
+            bounds_group.addLayer(layer_convnonexploitjoint_1);
+            map.addLayer(layer_convnonexploitjoint_1);
+
+            // Récupérer les valeurs uniques de SAO
+            var uniqueSAOs = [...new Set(json_convnonexploitjoint_1.features.map(f => f.properties['SAO']))];
+
+            // Ajouter des boutons dynamiques
+            var controls = document.getElementById('controls');
+            uniqueSAOs.forEach(sao => {
+                var button = document.createElement('button');
+                button.className = 'sao-button';
+                button.innerHTML = sao;
+                button.onclick = function() {
+                    zoomToSAO(sao);
+                };
+                controls.appendChild(button);
+            });
+
+            // Fonction pour zoomer sur une SAO
+            function zoomToSAO(saoValue) {
+                var saoBounds = [];
+                layer_convnonexploitjoint_1.eachLayer(function(layer) {
+                    if (layer.feature.properties['SAO'] === saoValue) {
+                        saoBounds.push(layer.getBounds());
+                    }
+                });
+
+                if (saoBounds.length > 0) {
+                    var combinedBounds = saoBounds.reduce(function(bounds, b) {
+                        return bounds.extend(b);
+                    }, L.latLngBounds());
+                    map.fitBounds(combinedBounds);
+                } else {
+                    alert('Aucune entité trouvée pour SAO: ' + saoValue);
+                }
+            }
+        </script>
+    </body>
+</html>
